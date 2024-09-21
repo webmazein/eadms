@@ -1,0 +1,65 @@
+.defect-row {
+  border: 1px solid #e0e0e0; /* Light grey border for a clean look */
+  border-radius: 8px; /* Rounded corners for a modern appearance */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  display: flex;
+  justify-content: space-between; /* Distribute space between columns */
+  align-items: center; /* Center items vertically */
+  padding: 1rem; /* Padding for spacing */
+  margin-bottom: 1rem; /* Spacing between rows */
+  background-color: white; /* Background color */
+}
+
+.updated {
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2); /* Slightly enhanced shadow */
+  animation: flashBackground 2s ease; /* Animation on updated rows */
+}
+
+.defect-column {
+  flex: 1; /* Equal space distribution */
+  padding: 0 0.5rem; /* Horizontal padding for space between text */
+  text-align: center; /* Center-align text */
+}
+
+.defect-names {
+  font-size: 1.25rem; /* Larger font size for defect names */
+  font-weight: 500; /* Bold for clarity */
+}
+
+.defect-name-hi {
+  color: #555; /* Subtle color for distinction */
+  font-size: 1rem; /* Slightly smaller for Hindi names */
+}
+
+.operator-name,
+.count {
+  font-size: 1.25rem; /* Adjust font size as needed */
+  font-weight: 500;
+}
+
+.vertical-line {
+  width: 1px; /* Width of the vertical line */
+  background-color: #e0e0e0; /* Light grey color */
+  height: 100%; /* Full height of the row */
+  margin: 0 0.5rem; /* Horizontal spacing */
+}
+
+@keyframes flashBackground {
+  0% {
+    background-color: white;
+  }
+
+  50% {
+    background-color: red;
+  }
+
+  100% {
+    background-color: white;
+  }
+}
+
+/* Optional container for centering and layout adjustments */
+.con {
+  width: 100% !important;
+  padding: 1rem; /* Add some padding for spacing */
+}

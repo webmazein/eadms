@@ -1,0 +1,1 @@
+.defect-card{width:100%;transition:background-color .5s ease}.updated{animation:flashBackground}@keyframes flashBackground{0%{background-color:#fff}50%{background-color:red}to{background-color:#fff}}.con{width:100%!important}
