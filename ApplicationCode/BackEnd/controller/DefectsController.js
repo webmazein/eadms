@@ -43,6 +43,17 @@ exports.getAllDefects = async (req, res) => {
   }
 };
 
+exports.getDefectsForScreen = async (req, res) => {
+  try {
+    const screenId = req.params.screenNo;
+    const defects = await Defect.getDefectByScreenNo(screenId);
+    res.json(defects);
+  } catch (err) {
+    console.error("Error getting defects:", err);
+    res.status(500).send("Error getting defects");
+  }
+}
+
 exports.getDefectById = async (req, res) => {
   try {
     const defectId = req.params.id;

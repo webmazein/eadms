@@ -22,7 +22,7 @@
 }
 
 .defect-names {
-  font-size: 1.25rem; /* Larger font size for defect names */
+  font-size: 1rem; /* Larger font size for defect names */
   font-weight: 500; /* Bold for clarity */
 }
 
@@ -63,3 +63,24 @@
   width: 100% !important;
   padding: 1rem; /* Add some padding for spacing */
 }
+
+.station-card {
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.defect-box {
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.defect-box p {
+  margin: 0;
+  font-size: 1.2rem;
+}
+

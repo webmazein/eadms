@@ -65,6 +65,19 @@
       });
     }
 
+    static getDefectByScreenNo(screenNo) {
+      return new Promise((resolve, reject) => {
+        const query = "SELECT * FROM defects WHERE screen_no = ?";
+        db.query(query, [screenNo], (err, rows) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(rows);
+        });
+      });
+    }
+
     static getDefectById(defectId) {
       return new Promise((resolve, reject) => {
         const query = "SELECT * FROM defects WHERE id = ?";

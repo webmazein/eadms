@@ -1,20 +1,10 @@
-import React, { useEffect, useRef, useMemo, useState } from "react";
-import {
-  CCard,
-  CCardBody,
-  CCol,
-  CRow,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-} from "@coreui/react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CCard, CCardBody, CCol, CRow } from "@coreui/react";
 import useWebSocket from "react-use-websocket";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { selectDefectsByScreenNo, setDefects } from "../../redux/DefectsSlice";
+import { setAllDefects, selectAllDefects } from "../../redux/AllDefectSlice"; 
 import "./style.css";
 import axios from "axios";
 import { backendUrl, websocketUrl } from "../../config";
@@ -23,9 +13,10 @@ const Zone = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const defects = useSelector((state) => selectDefectsByScreenNo(state, id));
+  const allDefects = useSelector(selectAllDefects); 
   const prevDefectsRef = useRef(defects);
   const alertTimerRef = useRef(5);
-  const [today, setToday] = useState('');
+  const [today, setToday] = useState("");
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     `${websocketUrl}`,
@@ -37,40 +28,75 @@ const Zone = () => {
     }
   );
 
-  useEffect(() => {
-    async function fetchZoneData() {
+  // useEffect(() => {
+  //   async function fetchZoneData() {
+  //     try {
+  //       const response = await axios.get(
+  //         `${backendUrl}/zone/getZoneRecordsForToday/${id}`
+  //       );
+  //       if (response.data.status === 200) {
+  //         const { data } = response.data;
+  //         const zone = [];
+  //         data.forEach((element) => {
+  //           zone.push({
+  //             id: element.id,
+  //             defect_name: element.defect_name,
+  //             defect_name_hi: element.defect_name_hi,
+  //             station_name: element.station_name,
+  //             screen_no: element.screen_no,
+  //             operator_name: element.operator_name,
+  //             updated_at: element.updated_at,
+  //             count: 1,
+  //             is_updated: false,
+  //           });
+  //         });
+  //         dispatch(setDefects(zone));
+  //       } else {
+  //         toast.error("Failed to fetch zone records");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching zone records:", error);
+  //       toast.error("Failed to fetch zone records");
+  //     }
+  //   }
+
+  //   fetchZoneData();
+  // }, []);
+
+   // Fetch defects from defectController.getAllDefects
+   useEffect(() => {
+    async function fetchAllDefects() {
       try {
-        const response = await axios.get(
-          `${backendUrl}/zone/getZoneRecordsForToday/${id}`
-        );
-        if (response.data.status === 200) {
-          const { data } = response.data;
-          const zone = [];
-          data.forEach((element) => {
-            zone.push({
-              id: element.id,
-              defect_name: element.defect_name,
-              defect_name_hi: element.defect_name_hi,
-              station_id: element.station_id,
-              screen_no: element.screen_no,
-              operator_name: element.operator_name,
-              updated_at: element.updated_at,
-              count: 1,
-              is_updated: false,
-            });
+        console.log(id)
+        const response = await axios.get(`${backendUrl}/defects/screenNo/${id}`);
+        if (response.status === 200) {
+          const { data } = response;
+          console.log()
+          const defectsData = []
+          data.forEach((defect) => {
+            defectsData.push({
+              id: defect.id,
+              defect_name: defect.defect_name,
+              defect_name_hi: defect.defect_name_hi,
+              station_name: defect.station_name,
+              operator_name: defect.operator_name,
+              updated_at: defect.updated_at,
+              screen_no: defect.screen_no,
+            })            
           });
-          dispatch(setDefects(zone));
+          console.log(defectsData)
+          dispatch(setAllDefects(defectsData));; // Save defects to Redux store
+          
         } else {
-          toast.error("Failed to fetch zone records");
+          console.error("Failed to fetch defects");
         }
       } catch (error) {
-        console.error("Error fetching zone records:", error);
-        toast.error("Failed to fetch zone records");
+        console.error("Error fetching defects:", error);
       }
     }
 
-    fetchZoneData();
-  }, []);
+    fetchAllDefects();
+  }, [id, dispatch]);
 
   useEffect(() => {
     if (lastMessage !== null) {
@@ -85,7 +111,7 @@ const Zone = () => {
               id: element.id,
               defect_name: element.defect_name,
               defect_name_hi: element.defect_name_hi,
-              station_id: element.station_id,
+              station_name: element.station_name,
               screen_no: element.screen_no,
               operator_name: element.operator_name,
               updated_at: element.updated_at,
@@ -133,25 +159,17 @@ const Zone = () => {
     fetchAlertTimer();
   }, []);
 
-  const defectsArr = useMemo(() => {
-    const defectMap = new Map();
-
+  // Group defects by station_name
+  const groupedDefects = useMemo(() => {
+    const stationMap = new Map();
     defects.forEach((defect) => {
-      const prevDefect = prevDefectsRef.current.find(
-        (el) => el.id === defect.id
-      );
-      const isUpdated = prevDefect ? prevDefect.count !== defect.count : true;
-      defectMap.set(defect.id, { ...defect, is_updated: isUpdated });
+      if (!stationMap.has(defect.station_name)) {
+        stationMap.set(defect.station_name, []);
+      }
+      stationMap.get(defect.station_name).push(defect);
     });
-
-    const sortedDefects = Array.from(defectMap.values()).sort((a, b) => {
-      const dateA = new Date(a.updated_at);
-      const dateB = new Date(b.updated_at);
-      return dateB - dateA;
-    });
-
-    return sortedDefects;
-  }, [defects, prevDefectsRef]);
+    return Array.from(stationMap.entries());
+  }, [defects]);
 
   useEffect(() => {
     prevDefectsRef.current = defects;
@@ -159,17 +177,24 @@ const Zone = () => {
 
   const getTime = (dateTime) => {
     const date = new Date(dateTime);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  
-  
   useEffect(() => {
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString(); // Format the date as per locale
     setToday(formattedDate);
   }, []);
-  
+
+  const groupedDefects1 = (allDefects || []).reduce((acc, defect) => {
+    const station = defect.station_name;
+    if (!acc[station]) {
+      acc[station] = [];
+    }
+    acc[station].push(defect);
+    return acc;
+  }, {});
+
   return (
     <div className="con">
       <div
@@ -192,16 +217,16 @@ const Zone = () => {
             left: "20px",
             top: "50%",
             transform: "translateY(-50%)",
-            width: "200px",
+            width: "150px",
           }}
         />
 
         {/* Heading */}
-        <h1 style={{ margin: 0 }}>
+        <h2 style={{ margin: 0 }}>
           <b>
             Engine Assembly Line Defect Monitoring System - Zone {id || "-"}
           </b>
-        </h1>
+        </h2>
 
         {/* Right Logo */}
         <img
@@ -212,98 +237,33 @@ const Zone = () => {
             right: "20px",
             top: "50%",
             transform: "translateY(-50%)",
-            width: "150px",
+            width: "100px",
           }}
         />
       </div>
-          <div>
-            <h3>Date - {today}</h3>
-          </div>
+      <div textAlign = "right">
+        <h5>Date - {today}</h5>
+      </div>
+
       <CRow className="g-4">
-        {defectsArr.length > 0 && (
-          <CTable responsive striped bordered className="custom-table">
-            <CTableHead>
-              <CTableRow>
-                <CTableHeaderCell>Time</CTableHeaderCell>
-                <CTableHeaderCell>
-                  Defect Name / Defect Name Hindi
-                </CTableHeaderCell>
-                <CTableHeaderCell>Operator Name</CTableHeaderCell>
-                <CTableHeaderCell>Today's Count</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {defectsArr.map((defect, index) => (
-                <CTableRow backgroundColor key={index}>
-                  <CTableDataCell
-                    className={defect.is_updated ? "updated" : ""}
-                    style={{
-                      width: "10%",
-                      height: "100px",
-                      alignContent: "center",
-                      fontSize: "2rem",
-                      animationDuration: defect.is_updated
-                        ? `${alertTimerRef.current}s`
-                        : undefined,
-                      animationFillMode: "forwards",
-                    }}
-                  >
-                    {getTime(defect.updated_at)}
-                  </CTableDataCell>
-                  <CTableDataCell
-                    className={defect.is_updated ? "updated" : ""}
-                    style={{
-                      width: "70%",
-                      height: "100px",
-                      fontSize: "2rem",
-                      alignContent: "center",
-                      animationDuration: defect.is_updated
-                        ? `${alertTimerRef.current}s`
-                        : undefined,
-                      animationFillMode: "forwards",
-                    }}
-                  >
-                    {defect.defect_name} &nbsp; / &nbsp;
-                    {defect.defect_name_hi || "-"}
-                  </CTableDataCell>
-                  <CTableDataCell
-                    defect-names
-                    className={defect.is_updated ? "updated" : ""}
-                    style={{
-                      width: "20%",
-                      height: "100px",
-                      fontSize: "2rem",
-                      alignContent: "center",
-                      animationDuration: defect.is_updated
-                        ? `${alertTimerRef.current}s`
-                        : undefined,
-                      animationFillMode: "forwards",
-                    }}
-                  >
-                    {defect.operator_name}
-                  </CTableDataCell>
-                  <CTableDataCell
-                    className={defect.is_updated ? "updated" : ""}
-                    style={{
-                      height: "100px",
-                      fontSize: "2rem",
-                      alignContent: "center",
-                      animationDuration: defect.is_updated
-                        ? `${alertTimerRef.current}s`
-                        : undefined,
-                      animationFillMode: "forwards",
-                    }}
-                  >
-                    {defect.count || 1}
-                  </CTableDataCell>
-                </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
-        )}
+        {Object.entries(groupedDefects1).map(([stationName, defectsArr]) => (
+          <CCol key={stationName} md={6} lg={4}>
+            <CCard className="station-card">
+              <CCardBody>
+                <h4>{stationName}</h4>
+                <hr></hr>
+                {defectsArr[0].defects.map((defect) => (
+                  <div id={defect.id} className="defect-box">
+                    <p>{defect.defect_name}</p> 
+                  </div>
+                ))}
+              </CCardBody>
+            </CCard>
+          </CCol>
+        ))}
       </CRow>
     </div>
-  );    
+  );
 };
 
 export default Zone;

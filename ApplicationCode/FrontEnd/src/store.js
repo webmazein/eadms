@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage' // defaults to localStorage for web
 import authReducer from '../src/redux/AuthSlice'
 import defectsReducer from './redux/DefectsSlice'
+import allDefectReducer from './redux/AllDefectSlice'
 
 // Define your initial state
 const initialState = {
@@ -25,7 +26,8 @@ const changeState = (state = initialState, { type, ...rest }) => {
 const rootReducer = combineReducers({
   ui: changeState,
   auth: authReducer,
-  defects: defectsReducer
+  defects: defectsReducer,
+  allDefects : allDefectReducer
 })
 
 // Configure persist

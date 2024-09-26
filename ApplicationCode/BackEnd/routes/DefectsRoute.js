@@ -7,6 +7,7 @@ const authenticateToken = require("../middleware/authenticate");
 router.post("/", authenticateToken, defectController.createDefect);
 router.post("/bulk_defects", authenticateToken, defectController.createBulkDefect);
 router.get("/", authenticateToken, defectController.getAllDefects);
+router.get("/screenNo/:screenNo", defectController.getDefectsForScreen)
 router.get("/:id", authenticateToken, defectController.getDefectById);
 router.put("/:id", authenticateToken, defectController.updateDefect);
 router.delete("/:id", authenticateToken, defectController.deleteDefect);
