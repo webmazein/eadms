@@ -1,4 +1,6 @@
 const Defect = require("../models/defects");
+const RaisedDefects = require("../models/raisedDefects");
+const Zone = require("../models/zone");
 // const { notifyClients } = require("../app");
 
 
@@ -43,16 +45,53 @@ exports.getAllDefects = async (req, res) => {
   }
 };
 
+// exports.getDefectsForScreen = async (req, res) => {
+//   try {
+//     const screenId = req.params.screenNo;
+//     const defects = await Defect.getDefectByScreenNo(screenId);
+    
+//     const defectCountsPromises = defects.map(async (defect) => {
+//       const count = await RaisedDefects.countDefectsForToday(defect.defect_name);
+//       return {
+//         ...defect,
+//         count, // Add the count field to the defect object
+//       };
+//     });
+
+//     // Wait for all counts to be resolved
+//     const defectsWithCounts = await Promise.all(defectCountsPromises);
+    
+//     res.json(defectsWithCounts);
+//     // res.json(defects);
+//   } catch (err) {
+//     console.error("Error getting defects:", err);
+//     res.status(500).send("Error getting defects");
+//   }
+// }
+
 exports.getDefectsForScreen = async (req, res) => {
   try {
     const screenId = req.params.screenNo;
     const defects = await Defect.getDefectByScreenNo(screenId);
-    res.json(defects);
+    
+    const defectCountsPromises = defects.map(async (defect) => {
+      const countResponse = await Zone.countDefectsForToday(defect.defect_name);
+      return {
+        ...defect,
+        count: countResponse.count, // Access the count from the response
+      };
+    });
+
+    // Wait for all counts to be resolved
+    const defectsWithCounts = await Promise.all(defectCountsPromises);
+    
+    res.json(defectsWithCounts);
   } catch (err) {
     console.error("Error getting defects:", err);
     res.status(500).send("Error getting defects");
   }
-}
+};
+
 
 exports.getDefectById = async (req, res) => {
   try {

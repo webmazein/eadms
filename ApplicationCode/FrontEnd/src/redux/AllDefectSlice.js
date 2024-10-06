@@ -50,6 +50,7 @@ export const { setAllDefects, clearAllDefects } = allDefectsSlice.actions;
 
 // Selector function to get all grouped defects
 export const selectAllDefects = (state) => {
+  console.log(state.allDefects.allDefects)
   return state.allDefects.allDefects || [];
 };
 

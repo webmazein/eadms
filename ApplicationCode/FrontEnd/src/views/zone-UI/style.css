@@ -84,3 +84,39 @@
   font-size: 1.2rem;
 }
 
+.defect-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9; /* Optional: Background color for the box */
+}
+
+.defect-box p {
+  margin: 0;
+  font-size: 16px;
+}
+
+.defect-count {
+  font-weight: bold;
+  color: #333;
+}
+
+.defect-name {
+  margin: 0;
+  font-size: 16px;
+}
+
+.defect-name.highlighted {
+  color: red; /* Highlight the defect name in red when new */
+}
+
+.defect-count {
+  font-weight: bold;
+  color: #333;
+}
+
+

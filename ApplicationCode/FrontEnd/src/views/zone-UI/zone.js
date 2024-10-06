@@ -17,6 +17,7 @@ const Zone = () => {
   const prevDefectsRef = useRef(defects);
   const alertTimerRef = useRef(5);
   const [today, setToday] = useState("");
+  const [initalDefects, setInitialDefects] = useState([]);
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     `${websocketUrl}`,
@@ -71,10 +72,9 @@ const Zone = () => {
         const response = await axios.get(`${backendUrl}/defects/screenNo/${id}`);
         if (response.status === 200) {
           const { data } = response;
-          console.log()
-          const defectsData = []
-          data.forEach((defect) => {
-            defectsData.push({
+          const defectsData = data.map((defect) => {
+  
+            return {
               id: defect.id,
               defect_name: defect.defect_name,
               defect_name_hi: defect.defect_name_hi,
@@ -82,9 +82,23 @@ const Zone = () => {
               operator_name: defect.operator_name,
               updated_at: defect.updated_at,
               screen_no: defect.screen_no,
-            })            
+              count: defect.count || 0, // Set count from existing if exists
+            };
           });
-          console.log(defectsData)
+          // const defectsData = []
+          // data.forEach((defect) => {
+          //   defectsData.push({
+          //     id: defect.id,
+          //     defect_name: defect.defect_name,
+          //     defect_name_hi: defect.defect_name_hi,
+          //     station_name: defect.station_name,
+          //     operator_name: defect.operator_name,
+          //     updated_at: defect.updated_at,
+          //     screen_no: defect.screen_no,
+          //     count: 0,
+          //   })            
+          // });
+          setInitialDefects(defectsData);
           dispatch(setAllDefects(defectsData));; // Save defects to Redux store
           
         } else {
@@ -97,29 +111,34 @@ const Zone = () => {
 
     fetchAllDefects();
   }, [id, dispatch]);
-
+  
   useEffect(() => {
     if (lastMessage !== null) {
       try {
         const message = JSON.parse(lastMessage.data);
-        const zoneInsertData = message?.data;
+        const reportedDefects = message?.data;
 
-        if (zoneInsertData?.length) {
-          const zone = [];
-          zoneInsertData.forEach((element) => {
-            zone.push({
-              id: element.id,
-              defect_name: element.defect_name,
-              defect_name_hi: element.defect_name_hi,
-              station_name: element.station_name,
-              screen_no: element.screen_no,
-              operator_name: element.operator_name,
-              updated_at: element.updated_at,
-              count: 1,
-              is_updated: false,
-            });
+        if (reportedDefects?.length) {
+          console.log(combineAllDefects(allDefects), 'combineAllDefects(allDefects)');
+          const updatedDefectsArray = combineAllDefects(allDefects).map(defect => {
+            // Create a shallow copy of each defect object
+            const defectCopy = { ...defect };
+            
+            // Find matching defects from `reportedDefects` based on defect_name or other criteria
+            const matchingDefects = reportedDefects.filter(
+              reportedDefect => reportedDefect.defect_name === defect.defect_name && reportedDefect.screen_no === defect.screen_no
+            );
+            
+            // Update count or any other property if matches are found
+            if (matchingDefects.length > 0) {
+              defectCopy.count += matchingDefects.length; // Adjust this logic based on your requirements
+            }
+  
+            return defectCopy;
           });
-          dispatch(setDefects([...defects, ...zone]));
+  
+          dispatch(setAllDefects(updatedDefectsArray));
+          console.log('Updated Defects Array:', updatedDefectsArray);
         }
       } catch (error) {
         console.error("Error parsing message:", error);
@@ -185,6 +204,20 @@ const Zone = () => {
     const formattedDate = currentDate.toLocaleDateString(); // Format the date as per locale
     setToday(formattedDate);
   }, []);
+
+  const combineAllDefects = (data) => {
+    let combinedDefects = [];
+    
+    // Loop through each station
+    data.forEach(station => {
+        // If the station contains defects, add them to the combined array
+        station.defects.forEach(defect => {
+            combinedDefects = combinedDefects.concat(defect);
+        });
+    });
+    
+    return combinedDefects;
+}
 
   const groupedDefects1 = (allDefects || []).reduce((acc, defect) => {
     const station = defect.station_name;
@@ -254,7 +287,7 @@ const Zone = () => {
                 <hr></hr>
                 {defectsArr[0].defects.map((defect) => (
                   <div id={defect.id} className="defect-box">
-                    <p>{defect.defect_name}</p> 
+                    <p>{defect.defect_name} : {defect.count}</p> 
                   </div>
                 ))}
               </CCardBody>

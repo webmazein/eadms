@@ -70,6 +70,35 @@ class Zone {
     });
   }
 
+  static countDefectsForToday(defectName) {
+    return new Promise((resolve, reject) => {
+      const today = new Date();
+      const startOfToday = new Date(today.setHours(0, 0, 0, 0)); // Start of today
+      const endOfToday = new Date(today.setHours(23, 59, 59, 999)); // End of today
+
+      db.query(
+        'SELECT COUNT(*) AS count FROM zone WHERE defect_name = ? AND updated_at BETWEEN ? AND ?',
+        [defectName, startOfToday, endOfToday],
+        (err, rows) => {
+          if (err) {
+            reject({
+              status: 500,
+              message: "Error counting defects",
+              error: err.message,
+            });
+            return;
+          }
+          resolve({
+            status: 200,
+            message: "Count retrieved successfully",
+            error: null,
+            count: rows[0].count, // Return the count
+          });
+        }
+      );
+    });
+  }
+
   static getAllZones() {
     return new Promise((resolve, reject) => {
       const query = "SELECT * FROM zone";
