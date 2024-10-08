@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { CCard, CCardBody, CCol, CRow } from "@coreui/react";
+import { CCard, CCardBody, CCol, CContainer, CRow, CCarousel, CCarouselItem, CImage } from "@coreui/react";
 import useWebSocket from "react-use-websocket";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -19,6 +19,9 @@ const Zone = () => {
   const [today, setToday] = useState("");
   const [initalDefects, setInitialDefects] = useState([]);
 
+  const [allDefectsZero, setAllDefectsZero] = useState(false);
+  const timerRef = useRef(null);
+
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     `${websocketUrl}`,
     {
@@ -29,46 +32,9 @@ const Zone = () => {
     }
   );
 
-  // useEffect(() => {
-  //   async function fetchZoneData() {
-  //     try {
-  //       const response = await axios.get(
-  //         `${backendUrl}/zone/getZoneRecordsForToday/${id}`
-  //       );
-  //       if (response.data.status === 200) {
-  //         const { data } = response.data;
-  //         const zone = [];
-  //         data.forEach((element) => {
-  //           zone.push({
-  //             id: element.id,
-  //             defect_name: element.defect_name,
-  //             defect_name_hi: element.defect_name_hi,
-  //             station_name: element.station_name,
-  //             screen_no: element.screen_no,
-  //             operator_name: element.operator_name,
-  //             updated_at: element.updated_at,
-  //             count: 1,
-  //             is_updated: false,
-  //           });
-  //         });
-  //         dispatch(setDefects(zone));
-  //       } else {
-  //         toast.error("Failed to fetch zone records");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching zone records:", error);
-  //       toast.error("Failed to fetch zone records");
-  //     }
-  //   }
-
-  //   fetchZoneData();
-  // }, []);
-
-   // Fetch defects from defectController.getAllDefects
    useEffect(() => {
     async function fetchAllDefects() {
       try {
-        console.log(id)
         const response = await axios.get(`${backendUrl}/defects/screenNo/${id}`);
         if (response.status === 200) {
           const { data } = response;
@@ -85,19 +51,7 @@ const Zone = () => {
               count: defect.count || 0, // Set count from existing if exists
             };
           });
-          // const defectsData = []
-          // data.forEach((defect) => {
-          //   defectsData.push({
-          //     id: defect.id,
-          //     defect_name: defect.defect_name,
-          //     defect_name_hi: defect.defect_name_hi,
-          //     station_name: defect.station_name,
-          //     operator_name: defect.operator_name,
-          //     updated_at: defect.updated_at,
-          //     screen_no: defect.screen_no,
-          //     count: 0,
-          //   })            
-          // });
+
           setInitialDefects(defectsData);
           dispatch(setAllDefects(defectsData));; // Save defects to Redux store
           
@@ -119,7 +73,6 @@ const Zone = () => {
         const reportedDefects = message?.data;
 
         if (reportedDefects?.length) {
-          console.log(combineAllDefects(allDefects), 'combineAllDefects(allDefects)');
           const updatedDefectsArray = combineAllDefects(allDefects).map(defect => {
             // Create a shallow copy of each defect object
             const defectCopy = { ...defect };
@@ -138,7 +91,6 @@ const Zone = () => {
           });
   
           dispatch(setAllDefects(updatedDefectsArray));
-          console.log('Updated Defects Array:', updatedDefectsArray);
         }
       } catch (error) {
         console.error("Error parsing message:", error);
@@ -228,16 +180,52 @@ const Zone = () => {
     return acc;
   }, {});
 
+  const checkDefectsZero = () => {
+    const allZero = Object.entries(groupedDefects1).every(([stationName, defectsArr]) =>
+      defectsArr[0].defects.every((defect) => defect.count === 0)
+    );
+    return allZero;
+  };
+
+  useEffect(() => {
+    const allZero = checkDefectsZero();
+
+    // Prevent re-render loops by only updating state if it has changed
+    if (allZero && !allDefectsZero) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      // Start a new timer if all defects are zero
+      timerRef.current = setTimeout(() => {
+        if (checkDefectsZero()) {
+          setAllDefectsZero(true);
+        }
+      }, 6000); // 60 seconds
+    } else if (!allZero && allDefectsZero) {
+      // Reset state if defects are no longer zero
+      setAllDefectsZero(false);
+    }
+
+    // Cleanup the timer on unmount or when defects change
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [groupedDefects1, allDefectsZero]);
+
+
   return (
     <div className="con">
       <div
         className="heading-container"
         style={{
           position: "relative",
-          backgroundColor: "#f0f0f0", // Background block color
-          padding: "50px",
+          backgroundColor: "#b5b5b5", // Background block color
+          padding: "35px",
           textAlign: "center",
-          marginBottom: "20px",
+          marginBottom: "10px",
           borderRadius: "8px", // Add rounded corners if needed
         }}
       >
@@ -255,11 +243,11 @@ const Zone = () => {
         />
 
         {/* Heading */}
-        <h2 style={{ margin: 0 }}>
+        <h4 style={{ margin: 0 }}>
           <b>
             Engine Assembly Line Defect Monitoring System - Zone {id || "-"}
           </b>
-        </h2>
+        </h4>
 
         {/* Right Logo */}
         <img
@@ -274,29 +262,39 @@ const Zone = () => {
           }}
         />
       </div>
-      <div textAlign = "right">
-        <h5>Date - {today}</h5>
+      <div style={{ textAlign: "right" }}>
+        <h6><b>Date - {today}</b></h6>
       </div>
 
+      <CContainer fluid>
       <CRow className="g-4">
-        {Object.entries(groupedDefects1).map(([stationName, defectsArr]) => (
-          <CCol key={stationName} md={6} lg={4}>
-            <CCard className="station-card">
-              <CCardBody>
-                <h4>{stationName}</h4>
-                <hr></hr>
-                {defectsArr[0].defects.map((defect) => (
-                  <div id={defect.id} className="defect-box">
-                    <p>{defect.defect_name} : {defect.count}</p> 
-                  </div>
-                ))}
-              </CCardBody>
-            </CCard>
-          </CCol>
-        ))}
+        {!allDefectsZero ? (
+          Object.entries(groupedDefects1).map(([stationName, defectsArr]) => (
+            <CCol key={stationName} md={6} lg={4}>
+              <CCard className="station-card">
+                <CCardBody>
+                  <h6>{stationName}</h6>
+                  <hr />
+                  {defectsArr[0].defects.map((defect) => (
+                    <div id={defect.id} className="defect-box" key={defect.id}>
+                      <p className="defect-name">{defect.defect_name}</p>
+                      <span className="defect-count">{defect.count}</span>
+                    </div>
+                  ))}
+                </CCardBody>
+              </CCard>
+            </CCol>
+          ))
+        ) : (
+          <div className="no-defects-container">
+            <h4>No Defects for the past 1 minute</h4>
+          </div>
+        )}
       </CRow>
+    </CContainer>
+
     </div>
-  );
+  );  
 };
 
 export default Zone;
