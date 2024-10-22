@@ -8,6 +8,8 @@ import { setAllDefects, selectAllDefects } from "../../redux/AllDefectSlice";
 import "./style.css";
 import axios from "axios";
 import { backendUrl, websocketUrl } from "../../config";
+import ZoneCarousel from "./ZoneCarousel";
+
 
 const Zone = () => {
   const { id } = useParams();
@@ -18,6 +20,7 @@ const Zone = () => {
   const alertTimerRef = useRef(5);
   const [today, setToday] = useState("");
   const [initalDefects, setInitialDefects] = useState([]);
+  const [defectAlert, setDefectAlert] = useState({});
 
   const [allDefectsZero, setAllDefectsZero] = useState(false);
   const timerRef = useRef(null);
@@ -84,7 +87,19 @@ const Zone = () => {
             
             // Update count or any other property if matches are found
             if (matchingDefects.length > 0) {
-              defectCopy.count += matchingDefects.length; // Adjust this logic based on your requirements
+              defectCopy.count += matchingDefects.length;
+              setDefectAlert((prevAlert) => ({
+                ...prevAlert,
+                [defectCopy.id]: true, // Set alert for this defect
+              }));
+
+              // Reset the alert after the alertTimer duration
+              setTimeout(() => {
+                setDefectAlert((prevAlert) => ({
+                  ...prevAlert,
+                  [defectCopy.id]: false,
+                }));
+              }, alertTimerRef.current * 1000); // Use the alert timer in seconds
             }
   
             return defectCopy;
@@ -201,7 +216,7 @@ const Zone = () => {
         if (checkDefectsZero()) {
           setAllDefectsZero(true);
         }
-      }, 6000); // 60 seconds
+      }, 60000); // 60 seconds
     } else if (!allZero && allDefectsZero) {
       // Reset state if defects are no longer zero
       setAllDefectsZero(false);
@@ -263,34 +278,48 @@ const Zone = () => {
         />
       </div>
       <div style={{ textAlign: "right" }}>
-        <h6><b>Date - {today}</b></h6>
+        <h6 className="date"><b>Date - {today}</b></h6>
       </div>
 
       <CContainer fluid>
-      <CRow className="g-4">
-        {!allDefectsZero ? (
-          Object.entries(groupedDefects1).map(([stationName, defectsArr]) => (
-            <CCol key={stationName} md={6} lg={4}>
-              <CCard className="station-card">
-                <CCardBody>
-                  <h6>{stationName}</h6>
-                  <hr />
-                  {defectsArr[0].defects.map((defect) => (
-                    <div id={defect.id} className="defect-box" key={defect.id}>
-                      <p className="defect-name">{defect.defect_name}</p>
-                      <span className="defect-count">{defect.count}</span>
-                    </div>
-                  ))}
-                </CCardBody>
-              </CCard>
-            </CCol>
-          ))
-        ) : (
-          <div className="no-defects-container">
-            <h4>No Defects for the past 1 minute</h4>
-          </div>
-        )}
-      </CRow>
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+  <CRow style={{ flex: 1, display: "flex", flexWrap: "wrap", justifyContent: "space-between", padding: "10px" }}>
+    {!allDefectsZero ? (
+      Object.entries(groupedDefects1).slice(0, 10).map(([stationName, defectsArr]) => (
+        <CCol key={stationName} style={{ flex: "1 0 21%", margin: "10px", boxSizing: "border-box" }}>
+          <CCard style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <CCardBody style={{ padding: "10px" }}>
+              <h6 style={{ fontSize: "calc(1vw + 0.5vh)" }}>{stationName}</h6>
+              <hr />
+              {defectsArr[0].defects.map((defect) => {
+                const textLength = defect.defect_name.length;
+                const fontSize = textLength > 20 ? "1.0vw" : "1.12vw"; // Adjust font size based on length
+
+                return (
+                  <div key={defect.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                    <p
+                      style={{
+                        color: defectAlert[defect.id] ? "red" : "black",
+                        fontSize: fontSize,
+                        margin: 0,
+                      }}
+                    >
+                      {defect.defect_name}
+                    </p>
+                    <span style={{ fontSize: fontSize }}>{defect.count}</span>
+                  </div>
+                );
+              })}
+            </CCardBody>
+          </CCard>
+        </CCol>
+      ))
+    ) : (
+      <ZoneCarousel zoneId={id} rotationInterval={1} />
+    )}
+  </CRow>
+</div>
+
     </CContainer>
 
     </div>

@@ -3,6 +3,7 @@ const express = require("express");
 const XLSX = require("xlsx");
 const { sequelize, Data } = require("./models/model");
 const path = require("path");
+const fs = require('fs');
 const userRoutes = require("./routes/UserRoute");
 const defectRoutes = require("./routes/DefectsRoute");
 const operatorsRoutes = require("./routes/OperatorsRoute");
@@ -294,7 +295,21 @@ app.get("/fetch-data", async (req, res) => {
   }
 });
 
+app.get('/api/images/:zoneId', (req, res) => {
+  const zoneId = req.params.zoneId;
+  const directoryPath = path.join(__dirname, `zone_images/zone${zoneId}`);
+  
+  fs.readdir(directoryPath, (err, files) => {
+      if (err) {
+          return res.status(500).json({ error: "Unable to scan directory" });
+      }
+      const images = files.map(file => `http://${serverAddress}:${PORT}/zone_images/zone${zoneId}/${file}`);
+      res.json(images);
+  });
+});
+
 app.use(express.static(path.join(__dirname, 'build')));
+app.use('/zone_images', express.static(path.join(__dirname, 'zone_images')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });

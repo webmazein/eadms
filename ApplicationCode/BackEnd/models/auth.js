@@ -27,7 +27,7 @@ class Auth {
     const accessToken = jwt.sign(
       { userId: user.id, username: user.username },
       secret_key,
-      { expiresIn: "24h" }
+      // { expiresIn: "24h" } No expiry
     );
     return {
       token: accessToken,
